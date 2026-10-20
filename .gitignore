@@ -218,3 +218,12 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Food agent: runtime data must never be committed
+# (DATA_DIR normally lives outside the repo; these cover it being placed inside)
+.env.*
+!.env.example
+data/
+photos/
+backup/
+*.xlsx
