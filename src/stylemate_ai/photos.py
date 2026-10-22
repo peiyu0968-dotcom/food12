@@ -1,8 +1,8 @@
 """存照片：判斷真正的圖片格式、清洗檔名、避免撞名。
 
 本檔含一段防護：
-  防護 3：食物名稱拿去當檔名前先清洗（放在 save_photo() 裡）
-框外那一行是「沒有防護時」的預設行為，所以把整段註解掉，程式仍能執行。
+  防護 3：衣服名稱拿去當檔名前先清洗（放在 save_photo() 裡）
+框外那一行是「沒有防護」時的預設行為，所以把整段註解掉，程式仍能執行。
 """
 from __future__ import annotations
 
@@ -30,7 +30,7 @@ def detect_image_suffix(data: bytes) -> str | None:
 
 
 def sanitize_filename_part(name: str) -> str:
-    """把食物名稱洗成可以安全放進檔名的短字串。"""
+    """把衣服名稱洗成可以安全放進檔名的短字串。"""
     chars = []
     for ch in name:
         if ch in FORBIDDEN_CHARS or unicodedata.category(ch).startswith("C"):
@@ -43,7 +43,7 @@ def sanitize_filename_part(name: str) -> str:
     text = text[:MAX_SHORT_NAME].strip(" .")
     if text.split(".")[0].upper() in WINDOWS_RESERVED:
         text = "_" + text
-    return text or "食物"
+    return text or "衣服"
 
 
 def _assert_inside(path: Path, folder: Path) -> None:
@@ -51,17 +51,18 @@ def _assert_inside(path: Path, folder: Path) -> None:
         raise ValueError(f"檔案路徑跑到照片資料夾外面了：{path}")
 
 
-def save_photo(photos_dir: Path, taken_at: datetime, food_name: str, data: bytes) -> Path:
-    """存成「YYYY-MM-DD hh-mm-ss 名稱.副檔名」；同一秒撞名就加 -2、-3。回傳存好的路徑。"""
+def save_photo(photos_dir: Path, taken_at: datetime, clothing_name: str, data: bytes) -> Path:
+    """存成「YYYY-MM-DD hh-mm-ss 名稱.副檔名」；同一秒撞名就加 -2、-3。回傳存好的路徑。
+    photos_dir 必須是某位使用者自己的照片資料夾。"""
     suffix = detect_image_suffix(data) or ".jpg"
     stamp = taken_at.strftime("%Y-%m-%d %H-%M-%S")
     photos_dir.mkdir(parents=True, exist_ok=True)
 
-    safe_name = food_name  # 沒有防護時：原樣使用 claude 回來的名稱
+    safe_name = clothing_name  # 沒有防護時：原樣使用 claude 回來的名稱
 
-    # ==== 防護 3：食物名稱當檔名前先清洗　開始 ====
-    # 清掉 / \ .. 冒號等會讓路徑亂跑的字，最後再確認檔案真的落在照片資料夾裡面。
-    safe_name = sanitize_filename_part(food_name)
+    # ==== 防護 3：衣服名稱當檔名前先清洗　開始 ====
+    # 清掉 / \ .. 冒號等會讓路徑亂跑的字，最後再確認檔案真的落在這位使用者的照片資料夾裡面。
+    safe_name = sanitize_filename_part(clothing_name)
     _assert_inside(photos_dir / f"{stamp} {safe_name}{suffix}", photos_dir)
     # ==== 防護 3 結束 ====
 
@@ -75,3 +76,12 @@ def save_photo(photos_dir: Path, taken_at: datetime, food_name: str, data: bytes
             return path
         except FileExistsError:
             counter += 1
+
+
+def delete_photo_file(photos_dir: Path, path: Path) -> bool:
+    """刪除一張照片；只允許刪除這位使用者照片資料夾裡的檔案。"""
+    _assert_inside(path, photos_dir)
+    if path.exists():
+        path.unlink()
+        return True
+    return False

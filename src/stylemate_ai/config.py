@@ -23,12 +23,12 @@ class Config:
     data_dir: Path
 
     @property
-    def photos_dir(self) -> Path:
-        return self.data_dir / "photos"
+    def users_dir(self) -> Path:
+        return self.data_dir / "users"
 
     @property
-    def xlsx_path(self) -> Path:
-        return self.data_dir / "food_log.xlsx"
+    def log_path(self) -> Path:
+        return self.data_dir / "agent.log"
 
 
 def load_config(env_path: Path | None = None) -> Config:

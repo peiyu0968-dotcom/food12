@@ -1,22 +1,18 @@
-"""啟動點：uv run food-agent"""
+"""啟動點：uv run stylemate"""
 from __future__ import annotations
 
 import logging
+import logging.handlers
 import shutil
 import sys
 
 import discord
 
-from .bot import FoodBot
+from .bot import StyleMateBot
 from .config import ConfigError, load_config
 
 
 def main() -> None:
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s %(levelname)s %(name)s: %(message)s",
-    )
-
     try:
         config = load_config()
     except ConfigError as exc:
@@ -28,10 +24,18 @@ def main() -> None:
         sys.exit(2)
 
     config.data_dir.mkdir(parents=True, exist_ok=True)
-    config.photos_dir.mkdir(parents=True, exist_ok=True)
+    config.users_dir.mkdir(parents=True, exist_ok=True)
+
+    fmt = logging.Formatter("%(asctime)s %(levelname)s %(name)s: %(message)s")
+    console = logging.StreamHandler()
+    console.setFormatter(fmt)
+    logfile = logging.handlers.RotatingFileHandler(config.log_path, maxBytes=1_000_000, backupCount=3, encoding="utf-8")
+    logfile.setFormatter(fmt)  # 日誌只記運作狀況，不記衣服內容、Token 或附件網址
+    logging.basicConfig(level=logging.INFO, handlers=[console, logfile])
+    logging.getLogger("discord").setLevel(logging.WARNING)
     logging.getLogger(__name__).info("資料資料夾：%s", config.data_dir)
 
-    bot = FoodBot(config)
+    bot = StyleMateBot(config)
     try:
         bot.run(config.discord_token, log_handler=None)
     except discord.LoginFailure:
